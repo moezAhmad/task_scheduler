@@ -50,7 +50,7 @@ app.post('/submit-code', (req, res) => {
     // Listen for the result from the worker client
     workerClient.once('code-result', (result) => {
       // Send the result back to the frontend
-      res.json({ success: true, result });
+      res.json(result);
     });
   } else {
     res.status(500).json({ success: false, message: 'No available worker clients' });

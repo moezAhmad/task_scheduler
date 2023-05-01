@@ -5,7 +5,7 @@ import axios from "axios";
 function App() {
   const [code, setCode] = useState("// Write your code here...");
   const [language, setLanguage] = useState("javascript");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState("result");
 
   const handleEditorChange = (value, event) => {
     setCode(value);
@@ -14,10 +14,11 @@ function App() {
   const handleSubmit = async () => {
     console.log("Submitting the following code:", code);
     try {
-      const response = await axios.post('http://192.168.43.123:3000/submit-code', {
+      const response = await axios.post('http://192.168.173.117:3000/submit-code', {
         language,
         code,
       });
+      console.log(response)
       setResult(response.data.result);
     } catch (error) {
       setResult(`Error: ${error.message}`);
@@ -42,6 +43,7 @@ function App() {
         onChange={handleEditorChange}
       />
       <button onClick={handleSubmit}>Submit</button>
+      {/* <p>{result}</p> */}
     </div>
   );
 }
