@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const socketIO = require('socket.io');
 const http = require('http');
 const path = require('path');
+var cors = require('cors')
 const BullyAlgorithm = require('./bullyAlgorithm');
 
 const workerClients = new Map();
@@ -16,6 +17,7 @@ const bully = new BullyAlgorithm(masterId, (newMasterId) => {
 
 // Initialize the express app
 const app = express();
+app.use(cors())
 const server = http.createServer(app);
 
 // Set up socket.io

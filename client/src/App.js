@@ -14,7 +14,7 @@ function App() {
   const handleSubmit = async () => {
     console.log("Submitting the following code:", code);
     try {
-      const response = await axios.post('http://10.0.2.15:3000/submit-code', {
+      const response = await axios.post('http://192.168.43.123:3000/submit-code', {
         language,
         code,
       });
