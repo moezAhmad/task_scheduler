@@ -28,13 +28,15 @@ socket.on('connect', () => {
 
   // Handle code execution
   socket.on('execute-code', (data) => {
-    const { language, code } = data;
+    const { taskId, language, code } = data;
     executeCode(language, code)
       .then((result) => {
-        socket.emit('code-result', { success: true, result });
+        console.log(`Task ${taskId} executed successfully`);
+        socket.emit('code-result', { taskId, success: true, result });
       })
       .catch((error) => {
-        socket.emit('code-result', { success: false, error: error.message });
+        console.error(`Task ${taskId} failed: ${error.message}`);
+        socket.emit('code-result', { taskId, success: false, error: error.message });
       });
   });
 
@@ -49,10 +51,17 @@ socket.on('connect', () => {
   });
 });
 
-function executeCode(language, code) {
-  return new Promise((resolve, reject) => {
-    // Implement code execution for each language here
-    // For simplicity, only JavaScript and Python are included in this example
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const { PythonShell } = require('python-shell');
+const JavaRunner = require('java-runner');
+
+const writeFileAsync = util.promisify(fs.writeFile);
+
+async function executeCode(language, code) {
+  return new Promise(async (resolve, reject) => {
     if (language === 'javascript') {
       try {
         const result = eval(code);
@@ -68,6 +77,43 @@ function executeCode(language, code) {
           resolve(results);
         }
       });
+    } else if (language === 'java') {
+      try {
+        const className = 'TempJavaClass'; // You may need to parse the class name from the code
+        const filePath = path.join(__dirname, `${className}.java`);
+        await writeFileAsync(filePath, code);
+
+        const javaRunner = new JavaRunner();
+        const javaResult = await javaRunner.runJavaFile(filePath, className);
+        resolve(javaResult);
+      } catch (error) {
+        reject(error);
+      }
+    } else if (language === 'c++') {
+      const sourceFilePath = path.join(__dirname, 'tempCode.cpp');
+      const binaryFilePath = path.join(__dirname, 'tempBinary');
+
+      try {
+        await writeFileAsync(sourceFilePath, code);
+
+        exec(`g++ ${sourceFilePath} -o ${binaryFilePath}`, (error) => {
+          if (error) {
+            reject(error);
+          } else {
+            exec(binaryFilePath, (error, stdout, stderr) => {
+              if (error) {
+                reject(error);
+              } else if (stderr) {
+                reject(new Error(stderr));
+              } else {
+                resolve(stdout);
+              }
+            });
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
     } else {
       reject(new Error(`Unsupported language: ${language}`));
     }

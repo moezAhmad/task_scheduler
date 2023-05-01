@@ -37,26 +37,34 @@ app.get('*', (req, res) => {
 
 // Add this near the other routes
 app.post('/submit-code', (req, res) => {
+  const taskId = generateUniqueId();
   const { language, code } = req.body;
   console.log(`Received code in ${language}:\n${code}`);
 
   // Choose a worker client to execute the code
   const workerClient = selectWorkerClient(workerClients);
-  
+
   if (workerClient) {
     // Forward the code to the selected worker client
-    workerClient.emit('execute-code', { language, code });
+    workerClient.emit('execute-code', { taskId, language, code });
 
-    // Listen for the result from the worker client
-    workerClient.once('code-result', (result) => {
-      // Send the result back to the frontend
-      res.json(result);
-    });
+    // Handle the result from the worker client
+    const handleCodeResult = (resultData) => {
+      const { taskId: resultTaskId, success, result, error } = resultData;
+      if (resultTaskId === taskId) {
+        // Send the result back to the frontend
+        res.json({ success, result, error });
+
+        // Cleanup
+        workerClient.removeListener('code-result', handleCodeResult);
+      }
+    };
+
+    workerClient.on('code-result', handleCodeResult);
   } else {
     res.status(500).json({ success: false, message: 'No available worker clients' });
   }
 });
-
 // Add this helper function to select a worker client
 function selectWorkerClient(workerClients) {
   // This is a basic selection strategy; you'll replace it with a more advanced scheduling algorithm later
