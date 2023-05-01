@@ -18,8 +18,13 @@ function App() {
         language,
         code,
       });
-      console.log(response)
-      setResult(response.data.result);
+      const { success, result } = response.data;
+       if (success) {
+      alert("Logs:\n" + result.logs + "\nResult: " + result.result);
+    } else {
+      console.error("Error submitting code:", response.data.message);
+      alert("Error: " + response.data.message);
+    }
     } catch (error) {
       setResult(`Error: ${error.message}`);
     }

@@ -65,18 +65,25 @@ app.post('/submit-code', (req, res) => {
     res.status(500).json({ success: false, message: 'No available worker clients' });
   }
 });
-// Add this helper function to select a worker client
+
+
+// Add a new variable to store the current worker index
+let currentWorkerIndex = 0;
+
+// Replace the previous selectWorkerClient function with this new version
 function selectWorkerClient(workerClients) {
-  // This is a basic selection strategy; you'll replace it with a more advanced scheduling algorithm later
   if (workerClients.size > 0) {
-    return workerClients.values().next().value;
+    const workerArray = Array.from(workerClients.values());
+    const selectedWorker = workerArray[currentWorkerIndex];
+    
+    // Move to the next worker in the array, or back to the start if the end is reached
+    currentWorkerIndex = (currentWorkerIndex + 1) % workerArray.length;
+    
+    return selectedWorker;
   }
   return null;
 }
 
-function generateUniqueId(){
-  return Math.floor(Math.random() * 1e10).toString();
-}
 
 
 // Set up socket.io connection

@@ -4,8 +4,9 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
-const { PythonShell } = require('python-shell');
+const { spawn } = require('child_process');
 const JavaRunner = require('java-runner');
+const { error } = require('console');
 
 const config = JSON.parse(fs.readFileSync('./server/src/config.json', 'utf-8'));
 const serverUrl = config.masterServerUrl;
@@ -55,68 +56,55 @@ socket.on('connect', () => {
 });
 
 
-const writeFileAsync = util.promisify(fs.writeFile);
-
-async function executeCode(language, code) {
-  return new Promise(async (resolve, reject) => {
+function executeCode(language, code) {
+  return new Promise((resolve, reject) => {
     if (language === 'javascript') {
       try {
+        const originalConsoleLog = console.log;
+        let logs = '';
+
+        // Override console.log to capture logs
+        console.log = (...args) => {
+          logs += args.join(' ') + '\n';
+          originalConsoleLog.apply(console, args);
+        };
+
         const result = eval(code);
-        resolve(result);
+        resolve({ result, logs });
+
+        // Restore the original console.log
+        console.log = originalConsoleLog;
       } catch (error) {
         reject(error);
       }
     } else if (language === 'python') {
-      PythonShell.runString(code, null, (error, results) => {
-        if (error) {
-          reject(error);
+      let logs = '';
+      const pyProcess = spawn('python', ['-u', '-c', code]);
+    
+      pyProcess.stdout.on('data', (data) => {
+        logs += data.toString();
+      });
+    
+      pyProcess.stderr.on('data', (data) => {
+        logs += data.toString();
+      });
+    
+      pyProcess.on('error', (error) => {
+        reject(error);
+      });
+    
+      pyProcess.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Python process exited with code ${code}`));
         } else {
-          resolve(results);
+          resolve({ result: null, logs });
         }
       });
-    } else if (language === 'java') {
-      try {
-        const className = 'TempJavaClass'; // You may need to parse the class name from the code
-        const filePath = path.join(__dirname, `${className}.java`);
-        await writeFileAsync(filePath, code);
-
-        const javaRunner = new JavaRunner();
-        const javaResult = await javaRunner.runJavaFile(filePath, className);
-        resolve(javaResult);
-      } catch (error) {
-        reject(error);
-      }
-    } else if (language === 'c++') {
-      const sourceFilePath = path.join(__dirname, 'tempCode.cpp');
-      const binaryFilePath = path.join(__dirname, 'tempBinary');
-
-      try {
-        await writeFileAsync(sourceFilePath, code);
-
-        exec(`g++ ${sourceFilePath} -o ${binaryFilePath}`, (error) => {
-          if (error) {
-            reject(error);
-          } else {
-            exec(binaryFilePath, (error, stdout, stderr) => {
-              if (error) {
-                reject(error);
-              } else if (stderr) {
-                reject(new Error(stderr));
-              } else {
-                resolve(stdout);
-              }
-            });
-          }
-        });
-      } catch (error) {
-        reject(error);
-      }
     } else {
       reject(new Error(`Unsupported language: ${language}`));
     }
-  });
-}
-
+    });
+    }
 function generateUniqueId() {
   return Math.floor(Math.random() * 1e10).toString();
 }
