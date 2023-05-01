@@ -5,7 +5,8 @@ import axios from "axios";
 function App() {
   const [code, setCode] = useState("// Write your code here...");
   const [language, setLanguage] = useState("javascript");
-  const [result, setResult] = useState("result");
+  const [result, setResult] = useState("");
+  const [logs, setLogs] = useState("")
 
   const handleEditorChange = (value, event) => {
     setCode(value);
@@ -19,8 +20,9 @@ function App() {
         code,
       });
       const { success, result } = response.data;
-       if (success) {
-      alert("Logs:\n" + result.logs + "\nResult: " + result.result);
+      if (success) {
+        setResult(result.result)
+        setLogs(result.logs)
     } else {
       console.error("Error submitting code:", response.data.message);
       alert("Error: " + response.data.message);
@@ -48,7 +50,15 @@ function App() {
         onChange={handleEditorChange}
       />
       <button onClick={handleSubmit}>Submit</button>
-      {/* <p>{result}</p> */}
+      <div className="result-window">
+        <h3>Execution Result:</h3>
+        <pre>{result}</pre>
+      </div>
+      <div className="result-window">
+        <h3>Logs</h3>
+        <pre>{logs}</pre>
+      </div>
+
     </div>
   );
 }
