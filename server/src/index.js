@@ -65,8 +65,6 @@ app.post('/submit-code', (req, res) => {
     res.status(500).json({ success: false, message: 'No available worker clients' });
   }
 });
-
-
 // Add a new variable to store the current worker index
 let currentWorkerIndex = 0;
 
@@ -84,6 +82,9 @@ function selectWorkerClient(workerClients) {
   return null;
 }
 
+function generateUniqueId(){
+  return Math.floor(Math.random() * 1e10).toString();
+}
 
 
 // Set up socket.io connection
