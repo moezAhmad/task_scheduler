@@ -1,10 +1,13 @@
 const io = require('socket.io-client');
+const BullyAlgorithm = require('./bullyAlgorithm');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
 const { PythonShell } = require('python-shell');
 const JavaRunner = require('java-runner');
-const BullyAlgorithm = require('./bullyAlgorithm');
-const fs = require('fs');
 
-const config = JSON.parse(fs.readFileSync('./src/config.json', 'utf-8'));
+const config = JSON.parse(fs.readFileSync('./server/src/config.json', 'utf-8'));
 const serverUrl = config.masterServerUrl;
 
 const socket = io(serverUrl);
@@ -51,12 +54,6 @@ socket.on('connect', () => {
   });
 });
 
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
-const { PythonShell } = require('python-shell');
-const JavaRunner = require('java-runner');
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
